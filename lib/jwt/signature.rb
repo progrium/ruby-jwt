@@ -7,6 +7,7 @@ require 'jwt/algos/eddsa'
 require 'jwt/algos/ecdsa'
 require 'jwt/algos/rsa'
 require 'jwt/algos/ps'
+require 'jwt/algos/none'
 require 'jwt/algos/unsupported'
 begin
   require 'rbnacl'
@@ -25,6 +26,7 @@ module JWT
       Algos::Rsa,
       Algos::Eddsa,
       Algos::Ps,
+      Algos::None,
       Algos::Unsupported
     ].freeze
     ToSign = Struct.new(:algorithm, :msg, :key)

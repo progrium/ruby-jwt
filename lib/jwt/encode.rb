@@ -52,8 +52,6 @@ module JWT
     end
 
     def encode_signature
-      return '' if @algorithm == ALG_NONE
-
       JWT::Base64.url_encode(JWT::Signature.sign(@algorithm, encoded_header_and_payload, @key))
     end
 

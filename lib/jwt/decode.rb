@@ -13,7 +13,7 @@ module JWT
       @jwt = jwt
       @key = key
       @options = options
-      @segments = jwt.split('.')
+      @segments = jwt.split('.', -1)
       @verify = verify
       @signature = ''
       @keyfinder = keyfinder
@@ -73,7 +73,6 @@ module JWT
 
     def validate_segment_count!
       return if segment_length == 3
-      return if !@verify && segment_length == 2 # If no verifying required, the signature is not needed
 
       raise(JWT::DecodeError, 'Not enough or too many segments')
     end

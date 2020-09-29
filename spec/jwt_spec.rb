@@ -44,6 +44,7 @@ describe JWT do
 
   context 'alg: NONE' do
     let(:alg) { 'none' }
+    let(:sig) { 'kWOVtIOpWcG7JnyJG0qOkTDbOy636XrrQhMm_8JrRQ8' }
 
     it 'should generate a valid token' do
       token = JWT.encode payload, nil, alg
@@ -51,11 +52,36 @@ describe JWT do
       expect(token).to eq data['NONE']
     end
 
+    it 'with key should raise JWT::EncodeError' do
+      expect do
+        JWT.encode payload, data[:secret], alg
+      end.to raise_error JWT::EncodeError, 'Signing key not supported for Unsecured JWT'
+    end
+
     it 'should decode a valid token' do
       jwt_payload, header = JWT.decode data['NONE'], nil, false
 
       expect(header['alg']).to eq alg
       expect(jwt_payload).to eq payload
+    end
+
+    it 'should decode and verify a valid token' do
+      jwt_payload, header = JWT.decode data['NONE'], nil, true, algorithm: alg
+
+      expect(header['alg']).to eq alg
+      expect(jwt_payload).to eq payload
+    end
+
+    it 'with signature should raise JWT::VerificationError' do
+      expect do
+        JWT.decode data['NONE'] + sig, nil, true, algorithm: alg
+      end.to raise_error JWT::VerificationError, 'Signature should be empty for Unsecured JWT'
+    end
+
+    it 'with key should raise JWT::VerificationError' do
+      expect do
+        JWT.decode data['NONE'], data[:secret], true, algorithm: alg
+      end.to raise_error JWT::VerificationError, 'Signing key not supported for Unsecured JWT'
     end
   end
 
@@ -391,12 +417,6 @@ describe JWT do
   context 'a token with not too many segments' do
     it 'raises JWT::DecodeError' do
       expect { JWT.decode('ThisIsNotAValidJWTToken.second.third.signature', nil, true) }.to raise_error(JWT::DecodeError, 'Not enough or too many segments')
-    end
-  end
-
-  context 'a token with two segments but does not require verifying' do
-    it 'raises something else than "Not enough or too many segments"' do
-      expect { JWT.decode('ThisIsNotAValidJWTToken.second', nil, false) }.to raise_error(JWT::DecodeError, 'Invalid segment encoding')
     end
   end
 
