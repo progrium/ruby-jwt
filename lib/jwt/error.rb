@@ -5,6 +5,7 @@ module JWT
   class DecodeError < StandardError; end
   class RequiredDependencyError < StandardError; end
 
+  class InvalidUnencodedPayload < EncodeError; end
   class VerificationError < DecodeError; end
   class ExpiredSignature < DecodeError; end
   class IncorrectAlgorithm < DecodeError; end

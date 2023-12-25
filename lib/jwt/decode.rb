@@ -14,6 +14,7 @@ module JWT
 
       @jwt = jwt
       @key = key
+      @detached_payload = options[:payload]
       @options = options
       @segments = jwt.split('.')
       @verify = verify
@@ -152,15 +153,35 @@ module JWT
     end
 
     def payload
-      @payload ||= parse_and_decode @segments[1]
+      @payload ||= parse_and_decode(encoded_payload, decode: decode_payload?)
+    end
+
+    def encoded_payload
+      payload = encoded_detached_payload if !@detached_payload.nil? && @segments[1].empty?
+      payload ||= @segments[1]
+      payload
+    end
+
+    def encoded_detached_payload
+      payload ||= ::JWT::Base64.url_encode(JWT::JSON.generate(@detached_payload)) if decode_payload?
+      payload ||= @detached_payload.to_json
+      payload
+    end
+
+    def decode_payload?
+      header['b64'].nil? || !!header['b64']
     end
 
     def signing_input
-      @segments.first(2).join('.')
+      [@segments[0], encoded_payload].join('.')
     end
 
-    def parse_and_decode(segment)
-      JWT::JSON.parse(::JWT::Base64.url_decode(segment))
+    def parse_and_decode(segment, decode: true)
+      if decode
+        JWT::JSON.parse(::JWT::Base64.url_decode(segment))
+      else
+        JWT::JSON.parse(segment)
+      end
     rescue ::JSON::ParserError
       raise JWT::DecodeError, 'Invalid segment encoding'
     end

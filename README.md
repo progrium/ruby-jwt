@@ -680,6 +680,72 @@ jwk_hash = jwk.export
 thumbprint_as_the_kid = jwk_hash[:kid]
 ```
 
+### Unencoded and Detached Payloads
+
+#### Unencoded Payloads
+
+To generate a JWT with an unencoded payload, you may use the `b64` header set to false as described by RFC 7797. When you do this, the `crit` header will be added if it doesn't already exist, and the `b64` value will be appended to it.
+
+```ruby
+private_key = RbNaCl::Signatures::Ed25519::SigningKey.new('abcdefghijklmnopqrstuvwxyzABCDEF')
+public_key = private_key.verify_key
+token = JWT.encode payload, private_key, 'ED25519', { b64: false }
+
+# eyJiNjQiOmZhbHNlLCJhbGciOiJFRDI1NTE5IiwiY3JpdCI6WyJiNjQiXX0.{\"data\":\"test\"}.RL6jDz7h_fbQQds1x_ABOVE_dp646ZIbzvBB_DlixrTTMAiG7k0q4wH8dpcQ7KUeGgqI0tqj7B4JG_jTwM6fCg
+puts token
+
+decoded_token = JWT.decode token, public_key, true, { algorithm: 'ED25519' }
+# Array
+# [
+#  {"data"=>"test"}, # payload
+#  {"b64"=>false, "alg"=>"ED25519", "crit"=>["b64"]} # header
+# ]
+```
+
+It is extremely important that one take great care when using unencoded payloads, as the payload must be url safe if it is intended to be transmitted, etc. Also, because `.` is used to delineate between JWT segments, the payload must not have any `.` characters. If the paylod contains `.` then an `InvalidUnencodedPayload` error is raised.
+
+For the above reasons, detached payloads are often used in combination with unencoded payloads.
+
+#### Detached Payloads
+
+To generate a JWT with a detached payload, you must call `encode_detached` instead of `encode`. Then, when decoding and verifying the token, you must pass the `payload` option with the value of the detached payload before encoding.
+
+```ruby
+private_key = RbNaCl::Signatures::Ed25519::SigningKey.new('abcdefghijklmnopqrstuvwxyzABCDEF')
+public_key = private_key.verify_key
+token = JWT.encode_detached payload, private_key, 'ED25519'
+
+# eyJhbGciOiJFRDI1NTE5In0..6xIztXyOupskddGA_RvKU76V9b2dCQUYhoZEVFnRimJoPYIzZ2Fm47CWw8k2NTCNpgfAuxg9OXjaiVK7MvrbCQ
+puts token
+
+decoded_token = JWT.decode token, public_key, true, { algorithm: 'ED25519', payload: payload }
+# Array
+# [
+#  {"test"=>"data"}, # payload
+#  {"alg"=>"ED25519"} # header
+# ]
+```
+
+#### Combining Unencoded and Detached Payload Support
+
+Unencoded and detached payloads are often used hand in hand, such as in proof signatures of Verifiable Credentials. You may use the `b64` header in combination with `encode_detached` to combine both features.
+
+```ruby
+private_key = RbNaCl::Signatures::Ed25519::SigningKey.new('abcdefghijklmnopqrstuvwxyzABCDEF')
+public_key = private_key.verify_key
+token = JWT.encode_detached payload, private_key, 'ED25519', { b64: false }
+
+# eyJiNjQiOmZhbHNlLCJhbGciOiJFRDI1NTE5IiwiY3JpdCI6WyJiNjQiXX0..RL6jDz7h_fbQQds1x_ABOVE_dp646ZIbzvBB_DlixrTTMAiG7k0q4wH8dpcQ7KUeGgqI0tqj7B4JG_jTwM6fCg
+puts token
+
+decoded_token = JWT.decode token, public_key, true, { algorithm: 'ED25519', payload: payload }
+# Array
+# [
+#  {"data"=>"test"}, # payload
+#  {"b64"=>false, "alg"=>"ED25519", "crit"=>["b64"]} # header
+# ]
+```
+
 # Development and Tests
 
 We depend on [Bundler](http://rubygems.org/gems/bundler) for defining gemspec and performing releases to rubygems.org, which can be done with

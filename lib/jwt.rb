@@ -22,7 +22,16 @@ module JWT
     Encode.new(payload: payload,
                key: key,
                algorithm: algorithm,
-               headers: header_fields).segments
+               headers: header_fields,
+               detached: false).segments
+  end
+
+  def encode_detached(payload, key, algorithm = 'HS256', header_fields = {})
+    Encode.new(payload: payload,
+               key: key,
+               algorithm: algorithm,
+               headers: header_fields,
+               detached: true).segments
   end
 
   def decode(jwt, key = nil, verify = true, options = {}, &keyfinder) # rubocop:disable Style/OptionalBooleanParameter
