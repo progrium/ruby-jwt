@@ -16,6 +16,12 @@ module JWT
           end.new(key, params, options)
         end
 
+        # Certificate to JWK
+        if key.is_a?(OpenSSL::X509::Certificate)
+          x5c = [::Base64.strict_encode64(key.to_der)]
+          return create_from(key.public_key, { x5c: x5c }, enrich_key: true)
+        end
+
         mappings.fetch(key.class) do |klass|
           raise JWT::JWKError, "Cannot create JWK from a #{klass.name}"
         end.new(key, params, options)
