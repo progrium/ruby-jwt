@@ -46,7 +46,7 @@ module JWT
       return unless contains_key?(@payload, 'iat')
 
       iat = @payload['iat']
-      raise(JWT::InvalidIatError, 'Invalid iat') if !iat.is_a?(Numeric) || iat.to_f > Time.now.to_f
+      raise(JWT::InvalidIatError, 'Invalid iat') if !iat.is_a?(Numeric) || iat.to_i > Time.now.to_i
     end
 
     def verify_iss
